@@ -1,0 +1,40 @@
+What I've done so far (to make up for previous report):
+Got nanopond running with SDL on Windows machine.
+Identified how changing parameters affects runtime.
+Tried various print statements to identify which report values were most useful.
+Added a clock function to time the overall execution/specific parts of code. Decided on
+a metric of operations per second as runtimes can vary by STOP_AT parameter.
+
+Current task:
+See if a different random number generator, which produces similar results, can run faster.
+
+'Realtime' Updates:
+Making sure it still runs correctly.
+Reading documentation on Mersenne Twister.
+Read about possible faster alternative RNGs.
+Implemented simple xorshift generator test. Extracted Mersenne twister into standalone
+test.
+Scripted a test for comparing time of generating a large number of uint64_t.
+Initial generation tests showed that there was no negligible time difference.
+Altered xorshift to xorshift+, also not any better in testing environment.
+As the test results are nearly identical, decide it's worth trying in 'full' scale.
+Testing in nanopond execution (STOP_AT (10000*TICK)): 
+	MersenneT: 1,183,320 instructions/second
+	xorshift+: 1,374,797 instructions/second
+Test 2:
+	MersenneT: 1,227,913
+	xorshift+: 1,378,094
+Test 3:
+	MersenneT: 1,224,110
+	xorshift+: 1,375,951
+Average:
+	MersenneT: 1,211,781
+	xorshift+: 1,376,281 [Speedup of 1.14]
+
+Goals for next week:
+Get SDL nanopond working with newly created Linux environment.
+Attempt to optimize nearest neighbor function.
+See if making instructions in genome byte addressable is faster.
+Take first steps in extracting data from dumps and analyzing with R.
+Identify bottlenecks.
+Consider good candidates for parallelization.

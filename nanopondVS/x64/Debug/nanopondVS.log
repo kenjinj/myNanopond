@@ -1,0 +1,13 @@
+﻿myNanopond.obj : error LNK2019: unresolved external symbol SDL_GetError referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_SetVideoMode referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_UpdateRect referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_LockSurface referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_UnlockSurface referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_WM_SetCaption referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_PollEvent referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_Init referenced in function SDL_main
+myNanopond.obj : error LNK2019: unresolved external symbol SDL_Quit referenced in function SDL_main
+MSVCRTD.lib(exe_main.obj) : error LNK2019: unresolved external symbol main referenced in function "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)
+SDL.lib : warning LNK4272: library machine type 'X86' conflicts with target machine type 'x64'
+SDLmain.lib : warning LNK4272: library machine type 'X86' conflicts with target machine type 'x64'
+C:\Users\Kenji\Dropbox\SSU\SP2016[CURRENT]\cs385\nanopond\nanopondVS\x64\Debug\nanopondVS.exe : fatal error LNK1120: 10 unresolved externals
