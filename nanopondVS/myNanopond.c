@@ -240,6 +240,9 @@
 * a time-based seed. */
 #define RANDOM_NUMBER_SEED 17
 
+/* Number of processors*/
+#define NUM_THREADS 8
+
 /* ----------------------------------------------------------------------- */
 
 #include <inttypes.h>	
@@ -248,6 +251,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "omp.h"
 #ifdef USE_SDL
 #ifdef _MSC_VER
 #include <SDL.h>
@@ -257,21 +261,21 @@
 #endif /* USE_SDL */
 
 /* My implementation of xorshift+ - KNJ*/
-uint64_t s[2];
+uint64_t s[NUM_THREADS][2];
 
 /**
 * Get a random number
 *
 * @return Random number
 */
-uint64_t getRandom()
+uint64_t getRandom(int tn)
 {
-	uint64_t x = s[0];
-	uint64_t const y = s[1];
-	s[0] = y;
+	uint64_t x = s[tn][0];
+	uint64_t const y = s[tn][1];
+	s[tn][0] = y;
 	x ^= x << 23;
-	s[1] = x ^ y ^ (x >> 17) ^ (y >> 26);
-	return s[1] + y;
+	s[tn][1] = x ^ y ^ (x >> 17) ^ (y >> 26);
+	return s[tn][1] + y;
 }
 
 
@@ -592,7 +596,8 @@ static inline int accessAllowed(struct Cell *const c2, const uint64_t c1guess, i
 	/* Access permission is more probable if they are more similar in sense 0,
 	* and more probable if they are different in sense 1. Sense 0 is used for
 	* "negative" interactions and sense 1 for "positive" ones. */
-	return sense ? (((getRandom() & 0xf) >= BITS_IN_FOURBIT_WORD[(c2->genome[0] & 0xf) ^ (c1guess & 0xf)]) || (!c2->parentID)) : (((getRandom() & 0xf) <= BITS_IN_FOURBIT_WORD[(c2->genome[0] & 0xf) ^ (c1guess & 0xf)]) || (!c2->parentID));
+	int tn = omp_get_thread_num();
+	return sense ? (((getRandom(tn) & 0xf) >= BITS_IN_FOURBIT_WORD[(c2->genome[0] & 0xf) ^ (c1guess & 0xf)]) || (!c2->parentID)) : (((getRandom(tn) & 0xf) <= BITS_IN_FOURBIT_WORD[(c2->genome[0] & 0xf) ^ (c1guess & 0xf)]) || (!c2->parentID));
 }
 
 /**
@@ -662,6 +667,14 @@ static inline uint8_t getColor(struct Cell *c)
 }
 #endif //USE_SDL
 
+/* 
+ *Global variables moved from main
+ */
+uint64_t i, x, y;
+/* Buffer used for execution output of candidate offspring */
+uint64_t outputBuf[NUM_THREADS][POND_DEPTH_SYSWORDS];
+
+
 /**
 * Main method
 *
@@ -670,19 +683,16 @@ static inline uint8_t getColor(struct Cell *c)
 */
 int main(int argc, char **argv)
 {
+	omp_set_num_threads(NUM_THREADS);
 	clock_t t;
 	t = clock();
-	uint64_t i, x, y;
-	/* Buffer used for execution output of candidate offspring */
-	uint64_t outputBuf[POND_DEPTH_SYSWORDS];
 
 	/* Seed and init the random number generator */
-	s[0] = 17;
-	s[1] = 1003;
-
-	//int myI;
-	//for (myI = 0; myI < 20; myI++)
-	//	printf("%u\n", getRandom());
+	int iter;
+	for (iter = 0; iter < NUM_THREADS; iter++) {
+		s[iter][0] = 17;
+		s[iter][1] = 1003;
+	}
 
 	/* Reset per-report stat counters */
 	for (x = 0; x<sizeof(statCounters); ++x) {
@@ -839,20 +849,20 @@ int main(int argc, char **argv)
 		* entropy into the substrate. This happens every INFLOW_FREQUENCY
 		* clockNP ticks. */
 		if (!(clockNP % INFLOW_FREQUENCY)) {
-			x = getRandom() % POND_SIZE_X;
-			y = getRandom() % POND_SIZE_Y;
+			x = getRandom(omp_get_thread_num()) % POND_SIZE_X;
+			y = getRandom(omp_get_thread_num()) % POND_SIZE_Y;
 			cell = &pond[x][y];
 			cell->ID = cellIdCounter;
 			cell->parentID = 0;
 			cell->lineage = cellIdCounter;
 			cell->generation = 0;
 #ifdef INFLOW_RATE_VARIATION
-			cell->energy += INFLOW_RATE_BASE + (getRandom() % INFLOW_RATE_VARIATION);
+			cell->energy += INFLOW_RATE_BASE + (getRandom(omp_get_thread_num()) % INFLOW_RATE_VARIATION);
 #else
 			cell->energy += INFLOW_RATE_BASE;
 #endif /* INFLOW_RATE_VARIATION */
 			for (i = 0; i<POND_DEPTH_SYSWORDS; ++i) {
-				cell->genome[i] = getRandom();
+				cell->genome[i] = getRandom(omp_get_thread_num());
 			}
 			++cellIdCounter;
 
@@ -869,13 +879,14 @@ int main(int argc, char **argv)
 		}
 
 		/* Pick a random cell to execute */
-		x = getRandom() % POND_SIZE_X;
-		y = getRandom() % POND_SIZE_Y;
+		x = getRandom(omp_get_thread_num()) % POND_SIZE_X;
+		y = getRandom(omp_get_thread_num()) % POND_SIZE_Y;
 		cell = &pond[x][y];
 
 		/* Reset the state of the VM prior to execution */
+		int tn = omp_get_thread_num();
 		for (i = 0; i<POND_DEPTH_SYSWORDS; ++i) {
-			outputBuf[i] = ~((uint64_t)0); /* ~0 == 0xfffff... */
+			outputBuf[tn][i] = ~((uint64_t)0); /* ~0 == 0xfffff... */
 		}
 		ptr_wordPtr = 0;
 		ptr_shiftPtr = 0;
@@ -909,8 +920,8 @@ int main(int argc, char **argv)
 			* it can have all manner of different effects on the end result of
 			* replication: insertions, deletions, duplications of entire
 			* ranges of the genome, etc. */
-			if ((getRandom() & 0xffffffff) < MUTATION_RATE) {
-				tmp = getRandom(); /* Call getRandom() only once for speed */
+			if ((getRandom(omp_get_thread_num()) & 0xffffffff) < MUTATION_RATE) {
+				tmp = getRandom(omp_get_thread_num()); /* Call getRandom() only once for speed */
 				if (tmp & 0x80) { /* Check for the 8th bit to get random boolean */
 					inst = tmp & 0xf; /* Only the first four bits are used here */
 				}
@@ -935,6 +946,7 @@ int main(int argc, char **argv)
 				}
 			}
 			else {
+				int tn = omp_get_thread_num();
 				/* If we're not in a false LOOP/REP, execute normally */
 
 				/* Keep track of execution frequencies for each instruction */
@@ -984,11 +996,11 @@ int main(int argc, char **argv)
 					currentWord = cell->genome[wordPtr]; /* Must refresh in case this changed! */
 					break;
 				case 0x7: /* READB: Read into the register from buffer */
-					reg = (outputBuf[ptr_wordPtr] >> ptr_shiftPtr) & 0xf;
+					reg = (outputBuf[tn][ptr_wordPtr] >> ptr_shiftPtr) & 0xf;
 					break;
 				case 0x8: /* WRITEB: Write out from the register to buffer */
-					outputBuf[ptr_wordPtr] &= ~(((uint64_t)0xf) << ptr_shiftPtr);
-					outputBuf[ptr_wordPtr] |= reg << ptr_shiftPtr;
+					outputBuf[tn][ptr_wordPtr] &= ~(((uint64_t)0xf) << ptr_shiftPtr);
+					outputBuf[tn][ptr_wordPtr] |= reg << ptr_shiftPtr;
 					break;
 				case 0x9: /* LOOP: Jump forward to matching REP if register is zero */
 					if (reg) {
@@ -1099,7 +1111,7 @@ int main(int argc, char **argv)
 		* to copy to a cell with no energy, since anything copied there
 		* would never be executed and then would be replaced with random
 		* junk eventually. See the seeding code in the main loop above. */
-		if ((outputBuf[0] & 0xff) != 0xff) {
+		if ((outputBuf[tn][0] & 0xff) != 0xff) {
 			tmcell = getNeighbor(x, y, facing);
 			if ((tmcell->energy) && accessAllowed(tmcell, reg, 0)) {
 				/* Log it if we're replacing a viable cell */
@@ -1112,7 +1124,7 @@ int main(int argc, char **argv)
 				tmcell->lineage = cell->lineage; /* Lineage is copied in offspring */
 				tmcell->generation = cell->generation + 1;
 				for (i = 0; i<POND_DEPTH_SYSWORDS; ++i) {
-					tmcell->genome[i] = outputBuf[i];
+					tmcell->genome[i] = outputBuf[tn][i];
 				}
 			}
 
@@ -1156,7 +1168,6 @@ int main(int argc, char **argv)
 #endif /* USE_SDL */
 	}
 	t = clock();
-	int iter;
 	for (iter = 0; iter < 16; iter++) {
 		printf("instruction %d avg: %.2f\n", iter, instructAvg[iter]);
 	}

@@ -129,6 +129,7 @@
       <AdditionalIncludeDirectories>C:\Users\Kenji\Dropbox\SSU\SP2016[CURRENT]\cs385\nanopond\nanopondVS\include</AdditionalIncludeDirectories>
       <AdditionalOptions>
       </AdditionalOptions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

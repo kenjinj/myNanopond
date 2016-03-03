@@ -1,9 +1,25 @@
-﻿  myNanopond.c
-c:\users\kenji\dropbox\ssu\sp2016[current]\cs385\nanopond\nanopondvs\nanopondvs\mynanopond.c(538): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'uint64_t'
-  c:\users\kenji\dropbox\ssu\sp2016[current]\cs385\nanopond\nanopondvs\nanopondvs\mynanopond.c(538): note: consider using '%lld' in the format string
-  c:\users\kenji\dropbox\ssu\sp2016[current]\cs385\nanopond\nanopondvs\nanopondvs\mynanopond.c(538): note: consider using '%I64d' in the format string
-c:\users\kenji\dropbox\ssu\sp2016[current]\cs385\nanopond\nanopondvs\nanopondvs\mynanopond.c(574): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (nanopondVS.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  myNanopond.c
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(464): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(1769): note: see declaration of 'sprintf'
-c:\users\kenji\dropbox\ssu\sp2016[current]\cs385\nanopond\nanopondvs\nanopondvs\mynanopond.c(575): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(465): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
-  nanopondVS.vcxproj -> C:\Users\Kenji\Dropbox\SSU\SP2016[CURRENT]\cs385\nanopond\nanopondVS\Debug\nanopondVS.exe
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(599): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(851): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(852): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(859): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(864): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(881): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(882): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(887): warning C4047: '=': 'uint64_t [32]' differs in levels of indirection from 'uint64_t'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(887): error C2106: '=': left operand must be l-value
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(921): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(922): error C2198: 'getRandom': too few arguments for call
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(996): error C2296: '>>': illegal, left operand has type 'uint64_t [32]'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(999): error C2296: '&=': illegal, left operand has type 'uint64_t [32]'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(1000): error C2296: '|=': illegal, left operand has type 'uint64_t [32]'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(1111): error C2296: '&': illegal, left operand has type 'uint64_t [32]'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(1124): warning C4047: '=': 'uint64_t' differs in levels of indirection from 'uint64_t *'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(1168): error C2086: 'int iter': redefinition
+  c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(690): note: see declaration of 'iter'
+c:\users\kenji\documents\github\mynanopond\nanopondvs\mynanopond.c(796): warning C4244: 'initializing': conversion from 'uint64_t' to 'float', possible loss of data

@@ -1,0 +1,11 @@
+Accomplished in class:
+Got SDL and nanotree working from flashdrive ubuntu, which has also solved the barrier I was running into on my home linux machine. Took first steps in implementing openmp into nanopond: made safe variables for random number generation and buffer.
+
+Current goals:
+Attempt to optimize nearest neighbor function.
+See if making instructions in genome byte addressable is faster.
+Take first steps in extracting data from dumps and analyzing with R.
+Identify bottlenecks.
+
+Implement openmp, so each thread picks a random cell and runs concurrently
+	Run metric analysis at each step to identify potential performance gains.
