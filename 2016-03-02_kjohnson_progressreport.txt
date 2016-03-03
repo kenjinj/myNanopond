@@ -1,0 +1,38 @@
+Goal: Implement openmp, so each thread picks a random cell and runs concurrently
+Run metric analysis to identify potential performance gains.
+
+Progress log:
+Chose where to implement openmp, right before a cell is chosen.
+Found which variables need to be private and shared.
+Got running on 8 cores, however at around 0.5 speedup over seq. execution.
+Thinking I have too many critical sections.
+Implemented a check to see if a nearby cell has been selected by another thread.
+
+Ran performance tests:
+
+1 Thread, SDL		: 810,000 op/sec
+1 Thread, No SDL	: 953,000 op/sec
+4 Threads, SDL		: 627,000 op/sec
+4 Threads, No SDL	: 713,000 op/sec
+
+From these results, it seems using SDL is not the largest bottleneck.
+
+Testing changes in SDL update after instruction calls
+
+4 Threads, screen shared			: 590,000 op/sec
+4 Threads, screen not shared			: 581,000 op/sec
+4 Threads, screen not shared, no critical	: 678,000 op/sec
+4 Threads, screen shared, no critical		: 682,000 op/sec
+
+Appearance of pond looked similar across executions, I believe the SDL update should not
+need a critical section as it has already checked for neighbor collisions, but this needs 
+further validation.
+
+Current issue:
+Executions with same seed producing different results
+
+Current goals:
+Fix parallelization
+Attempt to optimize nearest neighbor function.
+See if making instructions in genome byte addressable is faster.
+Extract data from dumps and analyze with R.
