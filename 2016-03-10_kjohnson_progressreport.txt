@@ -1,0 +1,20 @@
+Current issue:
+Executions with same seed producing different results
+
+Current goals:
+Fix parallelization
+Attempt to optimize nearest neighbor function.
+See if making instructions in genome byte addressable is faster.
+Extract data from dumps and analyze with R.
+
+Base test: stop@3000
+1,037,000
+1,149,000
+1,083,000
+
+Moved vars back into main:
+1,067,000
+1,069,000
+1,077,000
+
+Reduced critical sections:

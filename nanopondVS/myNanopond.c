@@ -182,7 +182,7 @@
 #define TICK 10000ULL
 
 /* Iteration to stop at. Comment this out to run forever. */
-#define STOP_AT (10000 * TICK)
+#define STOP_AT (3000 * TICK)
 
 /* Frequency of comprehensive reports-- lower values will provide more
 * info while slowing down the simulation. Higher values will give less
@@ -680,9 +680,11 @@ uint64_t totalInstruct = 0;
 float instructAvg[16] = { 0 };
 /* clockNP is incremented on each core loop */
 uint64_t clockNP = 0;
+uint64_t clockThread[NUM_THREADS];
 
 /* This is used to generate unique cell IDs */
 uint64_t cellIdCounter = 0;
+uint64_t cellIdThread[NUM_THREADS];
 
 /* Miscellaneous variables used in the loop */
 uint64_t currentWord, wordPtr, shiftPtr, tmp;
@@ -714,6 +716,7 @@ uint64_t falseLoopDepth;
 * to avoid the ugly use of a goto to exit the loop. :) */
 int stop;
 
+//thread number
 int tn;
 
 /***
@@ -749,17 +752,19 @@ int main(int argc, char **argv)
 
 	int myInstCounter = 0;
 
-	/* Seed and init the random number generator */
+	/* Seed and init thread specific variables */
 	int iter;
 	for (iter = 0; iter < NUM_THREADS; iter++) {
 		s[iter][0] = (iter + 1) * RANDOM_NUMBER_SEED + iter;
 		s[iter][1] = (iter + 1) * RANDOM_NUMBER_SEED2 + iter;
+		clockThread[iter] = 0;
+		cellIdThread[iter] = 0;
 	}
 
 	/* Reset per-report stat counters */
-	for (x = 0; x<sizeof(statCounters); ++x) {
-		((uint8_t *)&statCounters)[x] = (uint8_t)0;
-	}
+	//for (x = 0; x<sizeof(statCounters); ++x) {
+	//	((uint8_t *)&statCounters)[x] = (uint8_t)0;
+	//}
 
 	/* Set up SDL if we're using it */
 #ifdef USE_SDL
@@ -793,98 +798,102 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// START HERE
-	/* Main loop */
-	for (;;) {
-		/* Stop at STOP_AT if defined */
+		// START HERE
+		/* Main loop */
+//#pragma omp for schedule(dynamic)
+		for (;;) {
+			/* update main clock with thread clocks and reset*/
+			for (iter = 0; iter < NUM_THREADS; iter++) {
+				clockNP += clockThread[iter];
+				clockThread[iter] = 0;
+			}
+			/* Stop at STOP_AT if defined */
 #ifdef STOP_AT
-		if (clockNP >= STOP_AT) {
-			/* Also do a final dump if dumps are enabled */
+			if (clockNP >= STOP_AT) {
+				/* Also do a final dump if dumps are enabled */
 #ifdef DUMP_FREQUENCY
-			doDump(clockNP);
+				doDump(clockNP);
 #endif /* DUMP_FREQUENCY */
-			fprintf(stderr, "[QUIT] STOP_AT clockNP value reached\n");
-			break;
-		}
+				fprintf(stderr, "[QUIT] STOP_AT clockNP value reached\n");
+				break;
+			}
 #endif /* STOP_AT */
 
-		if (myInstCounter) {
-			// update my avg
-			for (iter = 0; iter < 16; iter++) {
-				if (statCounters.instructionExecutions[iter] != 0) {
-					float newAvg = totalInstruct / statCounters.instructionExecutions[iter];
-					if (instructAvg[iter] == 0)
-						instructAvg[iter] = newAvg;
-					else
-						instructAvg[iter] = (newAvg + instructAvg[iter]) / 2;
-				}
-			}
-		}
+			//if (myInstCounter) {
+			//	// update my avg
+			//	for (iter = 0; iter < 16; iter++) {
+			//		if (statCounters.instructionExecutions[iter] != 0) {
+			//			float newAvg = totalInstruct / statCounters.instructionExecutions[iter];
+			//			if (instructAvg[iter] == 0)
+			//				instructAvg[iter] = newAvg;
+			//			else
+			//				instructAvg[iter] = (newAvg + instructAvg[iter]) / 2;
+			//		}
+			//	}
+			//}
 
-		/* reset valid cell checklist*/
-		for (iter = 0; iter < NUM_THREADS; iter++) {
-			cellChosen[iter][0] = -1;
-			cellChosen[iter][1] = -1;
-		}
+			/* reset thread variables*/
+			for (iter = 0; iter < NUM_THREADS; iter++) {
+				cellChosen[iter][0] = -1;
+				cellChosen[iter][1] = -1;
+				clockThread[iter] = 0;
+			}
 
 #ifdef REPORT_FREQUENCY
-		if (!(clockNP % REPORT_FREQUENCY)) {
-			doReport(clockNP);
-		}
+			if (!(clockNP % REPORT_FREQUENCY)) {
+				doReport(clockNP);
+			}
 #endif
 
 #ifdef USE_SDL
-		/* Refresh the screen and check for input if SDL enabled */
-		if (!(clockNP % SDL_REFRESH_FREQUENCY)) {
-			while (SDL_PollEvent(&sdlEvent)) {
-				if (sdlEvent.type == SDL_QUIT) {
-					fprintf(stderr, "[QUIT] Quit signal received!\n");
-					exit(0);
-				}
-				else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) {
-					switch (sdlEvent.button.button) {
-					case SDL_BUTTON_LEFT:
-						fprintf(stderr, "[INTERFACE] Genome of cell at (%d, %d):\n", sdlEvent.button.x, sdlEvent.button.y);
-						dumpCell(stderr, &pond[sdlEvent.button.x][sdlEvent.button.y]);
-						break;
-					case SDL_BUTTON_RIGHT:
-						colorScheme = (enum COLORSCHEME)((colorScheme + 1) % MAX_COLOR_SCHEME);
-						fprintf(stderr, "[INTERFACE] Switching to color scheme \"%s\".\n", colorSchemeName[colorScheme]);
-						for (y = 0; y<POND_SIZE_Y; ++y) {
-							for (x = 0; x<POND_SIZE_X; ++x)
-								((uint8_t *)screen->pixels)[x + (y * sdlPitch)] = getColor(&pond[x][y]);
+			/* Refresh the screen and check for input if SDL enabled */
+			if (!(clockNP % SDL_REFRESH_FREQUENCY)) {
+				while (SDL_PollEvent(&sdlEvent)) {
+					if (sdlEvent.type == SDL_QUIT) {
+						fprintf(stderr, "[QUIT] Quit signal received!\n");
+						exit(0);
+					}
+					else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) {
+						switch (sdlEvent.button.button) {
+						case SDL_BUTTON_LEFT:
+							fprintf(stderr, "[INTERFACE] Genome of cell at (%d, %d):\n", sdlEvent.button.x, sdlEvent.button.y);
+							dumpCell(stderr, &pond[sdlEvent.button.x][sdlEvent.button.y]);
+							break;
+						case SDL_BUTTON_RIGHT:
+							colorScheme = (enum COLORSCHEME)((colorScheme + 1) % MAX_COLOR_SCHEME);
+							fprintf(stderr, "[INTERFACE] Switching to color scheme \"%s\".\n", colorSchemeName[colorScheme]);
+							for (y = 0; y<POND_SIZE_Y; ++y) {
+								for (x = 0; x<POND_SIZE_X; ++x)
+									((uint8_t *)screen->pixels)[x + (y * sdlPitch)] = getColor(&pond[x][y]);
+							}
+							break;
 						}
-						break;
 					}
 				}
+				SDL_UpdateRect(screen, 0, 0, POND_SIZE_X, POND_SIZE_Y);
 			}
-			SDL_UpdateRect(screen, 0, 0, POND_SIZE_X, POND_SIZE_Y);
-		}
 #endif /* USE_SDL */
 
 #ifdef DUMP_FREQUENCY
-		/* Periodically dump the viable population if defined */
-		if (!(clockNP % DUMP_FREQUENCY)) {
-			doDump(clockNP);
-		}
+			/* Periodically dump the viable population if defined */
+			if (!(clockNP % DUMP_FREQUENCY)) {
+				doDump(clockNP);
+			}
 #endif /* DUMP_FREQUENCY */
 
 #pragma omp parallel private(x, y, i, cell, tmcell, tn, ptr_wordPtr, ptr_shiftPtr, reg, tmp, loopStackPtr, wordPtr, shiftPtr, facing, falseLoopDepth, stop, currentWord, inst) \
-					  shared(clockNP, outputBuf, cellChosen, statCounters, pond, totalInstruct, cellIdCounter, screen)
-		{
-			tn = omp_get_thread_num();
-#pragma omp critical
+				     shared(cellChosen, statCounters, pond, totalInstruct, cellIdCounter, screen)			  
 			{
-				/* Increment clockNP and run reports periodically */
-				/* clockNP is incremented at the start, so it starts at 1 */
-				++clockNP;
-			}
+
+			tn = omp_get_thread_num();
+			/* Increment clocks om each thread */
+			++clockThread[tn];
 
 			/* Introduce a random cell somewhere with a given energy level */
 			/* This is called seeding, and introduces both energy and
 			* entropy into the substrate. This happens every INFLOW_FREQUENCY
 			* clockNP ticks. */
-			if (!(clockNP % INFLOW_FREQUENCY)) {
+			if (!(clockNP % INFLOW_FREQUENCY) && tn == 1) {
 				x = getRandom(tn) % POND_SIZE_X;
 				y = getRandom(tn) % POND_SIZE_Y;
 				cell = &pond[x][y];
@@ -946,11 +955,11 @@ int main(int argc, char **argv)
 			* whenever it might have changed... take a look at
 			* the code. :) */
 			currentWord = cell->genome[0];
-#pragma omp critical
-			{
-				/* Keep track of how many cells have been executed */
-				statCounters.cellExecutions++;
-			}
+//#pragma omp critical
+//			{
+//				/* Keep track of how many cells have been executed */
+//				statCounters.cellExecutions++;
+//			}
 
 			/* Core execution loop */
 			while (cell->energy && (!stop)) {
@@ -990,13 +999,13 @@ int main(int argc, char **argv)
 				}
 				else {
 					/* If we're not in a false LOOP/REP, execute normally */
-#pragma omp critical
-					{
-						/* Keep track of execution frequencies for each instruction */
-						statCounters.instructionExecutions[inst]++;
-						if (myInstCounter)
-							totalInstruct++;
-					}
+//#pragma omp critical
+//					{
+//						/* Keep track of execution frequencies for each instruction */
+//						statCounters.instructionExecutions[inst]++;
+//						if (myInstCounter)
+//							totalInstruct++;
+//					}
 					switch (inst) {
 					case 0x0: /* ZERO: Zero VM state registers */
 						reg = 0;
@@ -1126,10 +1135,10 @@ int main(int argc, char **argv)
 						tmcell = getNeighbor(x, y, facing);
 						if (accessAllowed(tmcell, reg, 1)) {
 							if (tmcell->generation > 2) {
-#pragma omp critical
-								{
-									++statCounters.viableCellShares;
-								}
+//#pragma omp critical
+//								{
+//									++statCounters.viableCellShares;
+//								}
 							}
 
 							tmp = cell->energy + tmcell->energy;
@@ -1167,10 +1176,10 @@ int main(int argc, char **argv)
 				if ((tmcell->energy) && accessAllowed(tmcell, reg, 0)) {
 					/* Log it if we're replacing a viable cell */
 					if (tmcell->generation > 2) {
-#pragma omp critical
-						{
-							++statCounters.viableCellsReplaced;
-						}
+//#pragma omp critical
+//						{
+//							++statCounters.viableCellsReplaced;
+//						}
 					}
 
 					tmcell->ID = ++cellIdCounter;
@@ -1222,11 +1231,11 @@ int main(int argc, char **argv)
 		}
 	}
 	t = clock();
-	if (myInstCounter) {
-		for (iter = 0; iter < 16; iter++) {
-			printf("instruction %d avg: %.2f\n", iter, instructAvg[iter]);
-		}
-	}
+	//if (myInstCounter) {
+	//	for (iter = 0; iter < 16; iter++) {
+	//		printf("instruction %d avg: %.2f\n", iter, instructAvg[iter]);
+	//	}
+	//}
 	printf("execution time = %f seconds\n", ((float)t) / CLOCKS_PER_SEC);
 	printf("operations per second = %f\n", STOP_AT / (((float)t) / CLOCKS_PER_SEC));
 	exit(0);
