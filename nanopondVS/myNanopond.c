@@ -182,7 +182,7 @@
 #define TICK 10000ULL
 
 /* Iteration to stop at. Comment this out to run forever. */
-#define STOP_AT (3000 * TICK)
+#define STOP_AT (10000 * TICK)
 
 /* Frequency of comprehensive reports-- lower values will provide more
 * info while slowing down the simulation. Higher values will give less
@@ -242,7 +242,7 @@
 #define RANDOM_NUMBER_SEED2 1003
 
 /* Number of processors*/
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 
 /* ----------------------------------------------------------------------- */
 
